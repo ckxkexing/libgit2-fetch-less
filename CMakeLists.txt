@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.5.1)
 
-project(libgit2 VERSION "1.5.0" LANGUAGES C)
+project(libgit2 VERSION "1.5.0" LANGUAGES C CXX)
 
 # Add find modules to the path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
@@ -20,11 +20,10 @@ option(EXPERIMENTAL_SHA256     "Enable experimental SHA256 support (for R&D/test
 
 # Optional subsystems
 option(BUILD_SHARED_LIBS       "Build Shared Library (OFF for Static)"                  ON)
-option(BUILD_TESTS             "Build Tests using the Clar suite"                       ON)
+option(BUILD_TESTS             "Build Tests using the Clar suite"                      OFF)
 option(BUILD_CLI               "Build the command-line interface"                       ON)
-option(BUILD_EXAMPLES          "Build library usage example apps"                      OFF)
+option(BUILD_EXAMPLES          "Build library usage example apps"                       ON)
 option(BUILD_FUZZERS           "Build the fuzz targets"                                OFF)
-
 # Suggested functionality that may not be available on a per-platform basis
 option(USE_THREADS             "Use threads for parallel processing when possible"      ON)
 option(USE_NSEC                "Support nanosecond precision file mtimes and ctimes"    ON)
@@ -135,6 +134,12 @@ if(BUILD_FUZZERS)
 	add_subdirectory(fuzzers)
 endif()
 
+# chenkx: add my sub project, ex. build get new commits
+# ADD_EXECUTABLE(get_new_commits get_new_commits/get_new_commits.c)
+# target_include_directories(get_new_commits PRIVATE ${LIBGIT2_INCLUDES} ${LIBGIT2_DEPENDENCY_INCLUDES})
+# target_include_directories(get_new_commits SYSTEM PRIVATE ${LIBGIT2_SYSTEM_INCLUDES})
+# target_link_libraries (get_new_commits libgit2package pthread)
+add_subdirectory(get_new_commits)
 
 # Export for people who use us as a dependency
 

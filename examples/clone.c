@@ -91,6 +91,10 @@ int lg2_clone(git_repository *repo, int argc, char **argv)
 	clone_opts.fetch_opts.callbacks.credentials = cred_acquire_cb;
 	clone_opts.fetch_opts.callbacks.payload = &pd;
 
+	// chenkx : add proxy in WSL env
+	clone_opts.fetch_opts.proxy_opts.type = GIT_PROXY_SPECIFIED;
+	clone_opts.fetch_opts.proxy_opts.url = "http://172.28.80.1:7890";
+
 	/* Do the clone */
 	error = git_clone(&cloned_repo, url, path, &clone_opts);
 	printf("\n");
