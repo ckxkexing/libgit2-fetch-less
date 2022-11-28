@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 	git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
 	// chenkx : add proxy in WSL env
 	fetch_opts.proxy_opts.type = GIT_PROXY_SPECIFIED;
-	fetch_opts.proxy_opts.url = "http://172.28.80.1:7890";
+	fetch_opts.proxy_opts.url = "http://172.25.32.1:7890";
 
 	const git_indexer_progress *stats;
 	printf("233 start!\n");
@@ -78,7 +78,6 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-
 		//fetch from the remote
 		error = git_remote_fetch(remote, NULL, &fetch_opts, NULL);
 		if(error < 0) {
@@ -93,10 +92,28 @@ int main(int argc, char **argv)
 			printf("\rReceived %u/%u objects in %" PRIuZ " bytes\n",
 			       stats->indexed_objects, stats->total_objects, stats->received_bytes);
 		}
+		for(int i=0; i<10; i++)
+			printf("\n");
 		git_oid head_oid, fetch_head_oid;
-		/*
 		puts("???");
-		error = git_reference_name_to_id(&head_oid, repo, 'HEAD');
+		git_strarray refs = {0};
+		char longsha[41] = {0};
+		error = git_reference_list(&refs, repo);
+		for(int i=0; i<refs.count; i++) {
+			printf("%s\t", refs.strings[i]);
+			error = git_reference_name_to_id(&head_oid, repo, refs.strings[i]);
+			git_oid_tostr(longsha, 41, &head_oid);
+			printf("%s\n", longsha);
+		}
+//		git_strarray fetch_refspecs = {0};
+//		int error = git_remote_get_fetch_refspecs(&fetch_refspecs, remote);
+		/* Make a shortened printable string from an OID */
+
+		for(int i=0; i<10; i++) {
+			printf("\n");
+		}
+		continue;
+		/*
 		puts("???");
 		error = git_reference_name_to_id(&fetch_head_oid, repo, 'FETCH_HEAD');
 		puts("???");
@@ -136,45 +153,3 @@ int main(int argc, char **argv)
 
 	return 0;
 }
-/*
-to test, I designed a example.First, I created a repository on GitHub, and wrote a README,
-then, I called the get_last to get a HEAD; Then I wrote some files directly on GitHub, and
-called the get_last to get another HEAD.
-Then I input line 115, and get new commits(line 142-146);
-*/
-/*
-The following is an example, line 115-135 is produced by libgit2:
-kgao@ubuntu:~/Desktop/libgit2$ echo /home/kgao/Desktop/test,https://github.com/KayGau/test,85fe3383da23b8413eee3115cbaa847a5e3d45c4,f28c1efee11607f6d2dab8ed810a484e32fbe577 | ./get_new_commits
-./update_test,https://github.com/KayGau/test,85fe3383da23b8413eee3115cbaa847a5e3d45c4,f28c1efee11607f6d2dab8ed810a484e32fbe577
- path: /home/kgao/Desktop/test
-url: https://github.com/KayGau/test
-new head: 85fe3383da23b8413eee3115cbaa847a5e3d45c4
-old head: f28c1efee11607f6d2dab8ed810a484e32fbe577
-can not open repository, create the dir: /home/kgao/Desktop/test
-remote_download /home/kgao/Desktop/libgit2/src/remote.c:859
-remote_download assert 1 /home/kgao/Desktop/libgit2/src/remote.c:863
-remote_download opts /home/kgao/Desktop/libgit2/src/remote.c:869
-remote_download opts 1 /home/kgao/Desktop/libgit2/src/remote.c:872
-remote_download connected /home/kgao/Desktop/libgit2/src/remote.c:879
-remote_download ls /home/kgao/Desktop/libgit2/src/remote.c:883
-remote_download init /home/kgao/Desktop/libgit2/src/remote.c:887
-remote_download refspecs (nil) 1 /home/kgao/Desktop/libgit2/src/remote.c:904
-remote_download dwim 1 /home/kgao/Desktop/libgit2/src/remote.c:908
-remote_download active refspecs 1 1 /home/kgao/Desktop/libgit2/src/remote.c:911
-remote_download negotiate /home/kgao/Desktop/libgit2/src/remote.c:925
-git_fetch_negotiate /home/kgao/Desktop/libgit2/src/fetch.c:163
-filter_wants /home/kgao/Desktop/libgit2/src/fetch.c:103
-filter_wants /home/kgao/Desktop/libgit2/src/fetch.c:128
-filter_wants heads=2 /home/kgao/Desktop/libgit2/src/fetch.c:136
-filter_wants head=0 local=0 id=85fe3383da23b8413eee3115cbaa847a5e3d45c4 name=HEAD /home/kgao/Desktop/libgit2/src/fetch.c:141
-filter_wants head=1 local=0 id=85fe3383da23b8413eee3115cbaa847a5e3d45c4 name=refs/heads/master /home/kgao/Desktop/libgit2/src/fetch.c:141
-git_fetch_negotiate need 1 /home/kgao/Desktop/libgit2/src/fetch.c:177
-remote_download git_fetch_download_pack /home/kgao/Desktop/libgit2/src/remote.c:928
-git_fetch_download_pack /home/kgao/Desktop/libgit2/src/fetch.c:211
-git_fetch_download_pack need /home/kgao/Desktop/libgit2/src/fetch.c:215
-85fe3383da23b8413eee3115cbaa847a5e3d45c4: Update README.md
-388cf00b21f23f321509347df369db662dd68b41: Create raw4
-bd5cb845e25ec967486175475caad097287c7033: Create raw 3
-715f3afc76f9b17837410f4f12b4d19645c6eb1c: Create raw test 2
-d22070fe80f293ffe43c51869eff702f6518d6ae: Create raw test
-*/

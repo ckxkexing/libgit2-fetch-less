@@ -142,6 +142,12 @@ if(USE_THREADS)
 endif()
 add_feature_info(threadsafe USE_THREADS "threadsafe support")
 
+# chenkx : use memcached in system.
+list(APPEND LIBGIT2_SYSTEM_LIBS memcached)
+# chenkx : use rocksdb in system.
+list(APPEND LIBGIT2_SYSTEM_LIBS rocksdb)
+
+
 #
 # Optional bundled features
 #

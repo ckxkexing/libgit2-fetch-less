@@ -4,6 +4,7 @@
  * This file is part of libgit2, distributed under the GNU GPL v2 with
  * a Linking Exception. For full terms see the included COPYING file.
  */
+#include <stdio.h>
 
 #include "odb.h"
 
@@ -682,7 +683,7 @@ int git_odb__add_default_backends(
 	size_t i = 0;
 	struct stat st;
 	ino_t inode;
-	git_odb_backend *loose, *packed;
+	git_odb_backend *loose, *packed, *memcached, *rocksdb;
 	git_odb_backend_loose_options loose_opts = GIT_ODB_BACKEND_LOOSE_OPTIONS_INIT;
 
 	/* TODO: inodes are not really relevant on Win32, so we need to find
@@ -701,7 +702,6 @@ int git_odb__add_default_backends(
 		git_error_set(GIT_ERROR_ODB, "failed to load object database in '%s'", objects_dir);
 		return -1;
 	}
-
 	inode = st.st_ino;
 
 	if (git_mutex_lock(&db->lock) < 0) {
@@ -724,15 +724,29 @@ int git_odb__add_default_backends(
 	loose_opts.oid_type = db->options.oid_type;
 
 	/* add the loose object backend */
+	//	git_odb__loose_priority
 	if (git_odb__backend_loose(&loose, objects_dir, &loose_opts) < 0 ||
-		add_backend_internal(db, loose, git_odb__loose_priority, as_alternates, inode) < 0)
+		add_backend_internal(db, loose, 2, as_alternates, inode) < 0)
 		return -1;
 
 	/* add the packed file backend */
+	//	git_odb__packed_priority
 	if (git_odb_backend_pack(&packed, objects_dir) < 0 ||
-		add_backend_internal(db, packed, git_odb__packed_priority, as_alternates, inode) < 0)
+		add_backend_internal(db, packed, 2, as_alternates, inode) < 0)
 		return -1;
-
+	puts("before memcache init");
+	/* chenkx: add test memcached backend*/
+	/* chenkx: need check here */
+	if(git_odb_backend_memcached(&memcached, "127.0.0.1", 11211) < 0||
+	    	add_backend_internal(db, memcached, 2, as_alternates, inode) < 0)
+	    	return -1;
+	puts("after memcache init");
+	/* chenkx : add test rocksdb backend*/
+	puts("before rocksdb init");
+	if(git_odb_backend_rocks(&rocksdb, "./tmp_rocks") < 0||
+	    	add_backend_internal(db, rocksdb, 1, as_alternates, inode) < 0)
+	    	return -1;
+	puts("after rocksdb init");
 	if (git_mutex_lock(&db->lock) < 0) {
 		git_error_set(GIT_ERROR_ODB, "failed to acquire the odb lock");
 		return -1;

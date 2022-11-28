@@ -2,7 +2,7 @@
 # git library functionality.
 
 add_library(libgit2 OBJECT)
-set_target_properties(libgit2 PROPERTIES C_STANDARD 90)
+#set_target_properties(libgit2 PROPERTIES C_STANDARD 90)
 set_target_properties(libgit2 PROPERTIES C_EXTENSIONS OFF)
 
 include(PkgBuildConfig)
@@ -33,7 +33,7 @@ file(GLOB SRC_H
 list(SORT SRC_H)
 target_sources(libgit2 PRIVATE ${SRC_H})
 
-file(GLOB SRC_GIT2 *.c *.h
+file(GLOB SRC_GIT2 *.c *.cpp *.h
 	streams/*.c streams/*.h
 	transports/*.c transports/*.h
 	xdiff/*.c xdiff/*.h)

@@ -33,6 +33,20 @@ GIT_BEGIN_DECL
  * @return 0 or an error code
  */
 GIT_EXTERN(int) git_odb_backend_pack(git_odb_backend **out, const char *objects_dir);
+/**
+ * chenkx: Create a backend for the memcached.
+ */
+GIT_EXTERN(int) git_odb_backend_memcached(git_odb_backend **out, const char *host, int port);
+/**
+ * chenkx: Create a backend for the rocksdb.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+GIT_EXTERN(int) git_odb_backend_rocks(git_odb_backend **backend_out,  const char *rocksPath);
+#ifdef __cplusplus
+}
+#endif
 
 typedef enum {
 	GIT_ODB_BACKEND_LOOSE_FSYNC = (1 << 0)
