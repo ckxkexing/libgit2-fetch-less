@@ -48,7 +48,7 @@ jobs:
     name: "Create container: ${{ matrix.container.name }}"
     steps:
     - name: Check out repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: source
         fetch-depth: 0
@@ -253,7 +253,7 @@ jobs:
     name: "Build: ${{ matrix.platform.name }}"
     steps:
     - name: Check out repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: source
         fetch-depth: 0
@@ -323,12 +323,13 @@ jobs:
   test_results:
     name: Test results
     needs: [ build ]
+    if: always()
     runs-on: ubuntu-latest
     steps:
     - name: Download test results
       uses: actions/download-artifact@v3
     - name: Generate test summary
-      uses: test-summary/action@v1
+      uses: test-summary/action@v2
       with:
         paths: 'test-results-*/*.xml'
 
@@ -345,7 +346,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: source
         fetch-depth: 0
@@ -364,7 +365,7 @@ jobs:
             cm doc api.docurium
         git checkout gh-pages
         zip --exclude .git/\* --exclude .gitignore --exclude .gitattributes -r api-documentation.zip .
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       name: Upload artifact
       with:
         name: api-documentation
