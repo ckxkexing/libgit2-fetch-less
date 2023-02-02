@@ -1,5 +1,5 @@
 # Specify regular expression implementation
-find_package(PCRE2)
+find_package(PCRE) # /usr/lib/x86_64-linux-gnu/libpcre.so
 
 if(REGEX_BACKEND STREQUAL "")
 	check_symbol_exists(regcomp_l "regex.h;xlocale.h" HAVE_REGCOMP_L)
