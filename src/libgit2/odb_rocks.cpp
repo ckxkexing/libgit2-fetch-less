@@ -119,6 +119,18 @@ int rocks_backend__exists(git_odb_backend *_backend, const git_oid *oid) {
 	return (s.ok() ? 1 : 0);
 }
 
+static int rocks_backend__foreach(git_odb_backend *_backend, git_odb_foreach_cb cb, void *data)
+{
+    // 因为我想从pack中
+    // 将数据全部读取到rocksdb中
+    // 所以这里的foreach
+    // 可以先假装为空。
+    int error;
+    struct pack_backend *backend;
+    unsigned int i;
+    return 0;
+}
+
 int rocks_backend__write(git_odb_backend *_backend, const git_oid *oid, const void *data, size_t len, git_otype type) {
 
 	assert(oid && _backend && data);
@@ -164,14 +176,13 @@ int git_odb_backend_rocks(git_odb_backend **backend_out,  const char *rocksPath)
 		rocks_backend__free((git_odb_backend *)backend);
 		return GIT_ERROR;
 	}
-
-	backend->parent.version = GIT_ODB_BACKEND_VERSION;
+	backend->parent.version = 1; // GIT_ODB_BACKEND_VERSION;
 	backend->parent.read = &rocks_backend__read;
 	backend->parent.read_header = &rocks_backend__read_header;
 	backend->parent.write = &rocks_backend__write;
 	backend->parent.exists = &rocks_backend__exists;
 	backend->parent.free = &rocks_backend__free;
-
+    backend->parent.foreach = &rocks_backend__foreach;
 	*backend_out = (git_odb_backend *)backend;
 	return GIT_OK;
 }

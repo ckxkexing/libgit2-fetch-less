@@ -42,7 +42,7 @@ int main(){
 
 	backend->opt.create_if_missing = true;
 
-	string path = "./tmp_rocks_2";
+	string path = "../tmp_rocks";
 	const char *rocksPath = path.c_str();
 	printf("%s\n", rocksPath);
 	backend->status = rocksdb::DB::Open(backend->opt, rocksPath, &backend->db);

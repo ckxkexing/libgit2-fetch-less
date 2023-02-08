@@ -322,6 +322,7 @@ GIT_EXTERN(int) git_odb_foreach(git_odb *db, git_odb_foreach_cb cb, void *payloa
  * @return 0 or an error code
  */
 GIT_EXTERN(int) git_odb_write(git_oid *out, git_odb *odb, const void *data, size_t len, git_object_t type);
+GIT_EXTERN(int) git_rocks_odb_write(git_oid *out, git_odb *odb, const void *data, size_t len, git_object_t type);
 
 /**
  * Open a stream to write an object into the ODB

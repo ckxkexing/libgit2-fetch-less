@@ -722,31 +722,34 @@ int git_odb__add_default_backends(
 		loose_opts.flags |= GIT_ODB_BACKEND_LOOSE_FSYNC;
 
 	loose_opts.oid_type = db->options.oid_type;
-
+	printf("check alternates = %d\n", as_alternates);
 	/* add the loose object backend */
-	//	git_odb__loose_priority
-	if (git_odb__backend_loose(&loose, objects_dir, &loose_opts) < 0 ||
-		add_backend_internal(db, loose, 2, as_alternates, inode) < 0)
-		return -1;
+    //	git_odb__loose_priority
+    if (git_odb__backend_loose(&loose, objects_dir, &loose_opts) < 0 ||
+        add_backend_internal(db, loose, git_odb__loose_priority, as_alternates, inode) < 0)
+        return -1;
 
 	/* add the packed file backend */
 	//	git_odb__packed_priority
-	if (git_odb_backend_pack(&packed, objects_dir) < 0 ||
-		add_backend_internal(db, packed, 2, as_alternates, inode) < 0)
+
+    if (git_odb_backend_pack(&packed, objects_dir) < 0 ||
+		add_backend_internal(db, packed, git_odb__packed_priority, as_alternates, inode) < 0)
 		return -1;
-	puts("before memcache init");
 	/* chenkx: add test memcached backend*/
 	/* chenkx: need check here */
-	if(git_odb_backend_memcached(&memcached, "127.0.0.1", 11211) < 0||
-	    	add_backend_internal(db, memcached, 2, as_alternates, inode) < 0)
-	    	return -1;
-	puts("after memcache init");
+   	// puts("before memcache init");
+	// if(git_odb_backend_memcached(&memcached, "127.0.0.1", 11211) < 0||
+	//	    	add_backend_internal(db, memcached, 2, as_alternates, inode) < 0)
+	//	    	return -1;
+	// puts("after memcache init");
+
 	/* chenkx : add test rocksdb backend*/
-	puts("before rocksdb init");
-	if(git_odb_backend_rocks(&rocksdb, "./tmp_rocks") < 0||
-	    	add_backend_internal(db, rocksdb, 1, as_alternates, inode) < 0)
+	// puts("before rocksdb init");
+	if(git_odb_backend_rocks(&rocksdb, "../tmp_rocks") < 0||
+	    	add_backend_internal(db, rocksdb, 2, as_alternates, inode) < 0)
 	    	return -1;
-	puts("after rocksdb init");
+	// puts("after rocksdb init");
+
 	if (git_mutex_lock(&db->lock) < 0) {
 		git_error_set(GIT_ERROR_ODB, "failed to acquire the odb lock");
 		return -1;
@@ -861,6 +864,7 @@ int git_odb__open(
 
 int git_odb__set_caps(git_odb *odb, int caps)
 {
+	puts("_+_+_+_+start git_odb__set_caps _+_+_+");
 	if (caps == GIT_ODB_CAP_FROM_OWNER) {
 		git_repository *repo = GIT_REFCOUNT_OWNER(odb);
 		int val;
@@ -873,7 +877,7 @@ int git_odb__set_caps(git_odb *odb, int caps)
 		if (!git_repository__configmap_lookup(&val, repo, GIT_CONFIGMAP_FSYNCOBJECTFILES))
 			odb->do_fsync = !!val;
 	}
-
+	puts("_+_+_+_+end git_odb__set_caps _+_+_+");
 	return 0;
 }
 
@@ -913,7 +917,7 @@ void git_odb_free(git_odb *db)
 
 	GIT_REFCOUNT_DEC(db, odb_free);
 }
-
+// chenkx: !!! really importance
 static int odb_exists_1(
 	git_odb *db,
 	const git_oid *id,
@@ -933,9 +937,8 @@ static int odb_exists_1(
 
 		if (only_refreshed && !b->refresh)
 			continue;
-
 		if (b->exists != NULL)
-			found = (bool)b->exists(b, id);
+            found = (bool)b->exists(b, id);
 	}
 	git_mutex_unlock(&db->lock);
 
@@ -1014,7 +1017,7 @@ int git_odb_exists(git_odb *db, const git_oid *id)
 {
     return git_odb_exists_ext(db, id, 0);
 }
-
+// chenkx 这里应该是可优化之一了。
 int git_odb_exists_ext(git_odb *db, const git_oid *id, unsigned int flags)
 {
 	git_odb_object *object;
@@ -1276,19 +1279,19 @@ int git_odb__read_header_or_object(
 
 	if (git_oid_is_zero(id))
 		return error_null_oid(GIT_ENOTFOUND, "cannot read object");
-
+	// puts("messi~~~~~~!");
 	if ((object = git_cache_get_raw(odb_cache(db), id)) != NULL) {
 		*len_p = object->cached.size;
 		*type_p = object->cached.type;
 		*out = object;
 		return 0;
 	}
-
+	// printf("c luo %d\n", error);
 	error = odb_read_header_1(len_p, type_p, db, id, false);
-
+	// printf("dulante %d\n", error);
 	if (error == GIT_ENOTFOUND && !git_odb_refresh(db))
 		error = odb_read_header_1(len_p, type_p, db, id, true);
-
+	// printf("james %d\n", error);
 	if (error == GIT_ENOTFOUND)
 		return git_odb__error_notfound("cannot read header for", id, git_oid_hexsize(db->options.oid_type));
 
@@ -1644,6 +1647,61 @@ int git_odb_write(
 	git_odb_stream_free(stream);
 	return error;
 }
+// chenkx 指向rocksdb中插入数据
+int git_rocks_odb_write( git_oid *oid, git_odb *db, const void *data, size_t len, git_object_t type)
+{
+	size_t i;
+	int error;
+	git_odb_stream *stream;
+
+	GIT_ASSERT_ARG(oid);
+	GIT_ASSERT_ARG(db);
+    // 这里应该是确认数据的准确性。
+	if ((error = git_odb__hash(oid, data, len, type, db->options.oid_type)) < 0){
+        return error;
+    }
+	if (git_oid_is_zero(oid))
+		return error_null_oid(GIT_EINVALID, "cannot write object");
+
+	// if (git_odb__freshen(db, oid))
+	// 	return 0;
+    // printf("?????");
+	if ((error = git_mutex_lock(&db->lock)) < 0) {
+		git_error_set(GIT_ERROR_ODB, "failed to acquire the odb lock");
+		return error;
+	}
+	for (i = 0, error = GIT_ERROR; i < db->backends.length && error < 0; ++i) {
+		backend_internal *internal = git_vector_get(&db->backends, i);
+		git_odb_backend *b = internal->backend;
+        // 假设rocks db的backends版本是2
+        if(b->version == GIT_ODB_BACKEND_VERSION){
+            continue;
+        }
+		/* we don't write in alternates! */
+		if (internal->is_alternate)
+			continue;
+
+		if (b->write != NULL)
+			error = b->write(b, oid, data, len, type);
+	}
+	git_mutex_unlock(&db->lock);
+
+	if (!error || error == GIT_PASSTHROUGH)
+		return 0;
+
+	/* if no backends were able to write the object directly, we try a
+	 * streaming write to the backends; just write the whole object into the
+	 * stream in one push
+	 */
+	// if ((error = git_odb_open_wstream(&stream, db, len, type)) != 0)
+	// 	return error;
+    //
+	// if ((error = stream->write(stream, data, len)) == 0)
+	// 	error = stream->finalize_write(stream, oid);
+    //
+	// git_odb_stream_free(stream);
+	return error;
+}
 
 static int hash_header(git_hash_ctx *ctx, git_object_size_t size, git_object_t type)
 {
@@ -1832,8 +1890,9 @@ int git_odb_write_pack(struct git_odb_writepack **out, git_odb *db, git_indexer_
 		git_odb_backend *b = internal->backend;
 
 		/* we don't write in alternates! */
-		if (internal->is_alternate)
+		if (internal->is_alternate){
 			continue;
+		}
 
 		if (b->writepack != NULL) {
 			++writes;
@@ -1865,8 +1924,10 @@ int git_odb_write_multi_pack_index(git_odb *db)
 		if (internal->is_alternate)
 			continue;
 
+        puts("?????????????");
 		if (b->writemidx != NULL) {
-			++writes;
+            puts("!!!!!!!!!!!!");
+            ++writes;
 			error = b->writemidx(b);
 		}
 	}

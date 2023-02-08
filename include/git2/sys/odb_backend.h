@@ -106,7 +106,7 @@ struct git_odb_backend {
 	void GIT_CALLBACK(free)(git_odb_backend *);
 };
 
-#define GIT_ODB_BACKEND_VERSION 1
+#define GIT_ODB_BACKEND_VERSION 2
 #define GIT_ODB_BACKEND_INIT {GIT_ODB_BACKEND_VERSION}
 
 /**
