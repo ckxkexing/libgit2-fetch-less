@@ -379,6 +379,9 @@ GIT_EXTERN(int) git_treebuilder_filter(
 GIT_EXTERN(int) git_treebuilder_write(
 	git_oid *id, git_treebuilder *bld);
 
+GIT_EXTERN(int) git_treebuilder_write_cache(
+        git_oid *id, git_treebuilder *bld);
+
 /** Callback for the tree traversal method */
 typedef int GIT_CALLBACK(git_treewalk_cb)(
 	const char *root, const git_tree_entry *entry, void *payload);

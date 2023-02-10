@@ -13,3 +13,13 @@ TODO:
 
 # locate commit
 定位commit最先出现的分支。
+
+# 一些有用的debug 代码
+
+```cpp
+char shortsha[41] = {0};
+git_oid_tostr(shortsha, 40, id);
+printf("check for  %s\n", shortsha);
+```
+
+解析object可以参考[link](https://fuchsia.googlesource.com/third_party/libgit2/+/HEAD/examples/general.c)
