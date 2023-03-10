@@ -94,35 +94,22 @@ int rocks_backend__read(void **data_p, size_t *len_p, git_otype *type_p, git_odb
 	auto s = backend->db->Get(rocksdb::ReadOptions(), type_key, &key_value);
 	if(!s.ok())
 		return GIT_ENOTFOUND;
-    printf("type is get fine\n");
 	std::string data_key, data_value;
 	rocks_backend__build_key(data_key, oid->id, data_suffix);
 	s = backend->db->Get(rocksdb::ReadOptions(), data_key, &data_value);
 	if(!s.ok())
 		return GIT_ENOTFOUND;
-    printf("data is get fine\n");
     std::string size_key, size_value;
     rocks_backend__build_key(size_key, oid->id, size_suffix);
     s = backend->db->Get(rocksdb::ReadOptions(), size_key, &size_value);
     if(!s.ok())
         return GIT_ENOTFOUND;
-    printf("size is get fine\n");
-    printf("load size = %lld\n", std::stoll(size_value));
-    printf("data_value size = %d\n", data_value.size());
 
     size_t data_size = std::stoll(size_value);
-	// char *dataP = (char*)operator new(data_size + 1);
-	// data_value.copy(dataP, data_size);
-    // printf("chenkx hhhhhhhhhhhhhhhhhhhhh\n");
-	// dataP[data_size + 1] = '\0';
     *data_p = malloc(data_size);
     std::memcpy(*data_p, data_value.c_str(), data_size);
-    printf("chenkx wwwwwwwwwwwwwwwwwwwww, key value = %d\n", std::stoi(key_value));
-	// *type_p = static_cast<git_otype>(std::stoi(key_value));
     *type_p = (git_otype) atoi(key_value.c_str());
 	*len_p = std::stoll(size_value);
-	// *data_p = dataP;
-    puts("is herrrrrrrrrrrrrrrrrrrrr");
 	return GIT_OK;
 }
 
