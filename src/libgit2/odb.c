@@ -1647,7 +1647,7 @@ int git_odb_write(
 	git_odb_stream_free(stream);
 	return error;
 }
-// chenkx 指向rocksdb中插入数据
+// chenkx 向rocksdb中插入数据
 int git_rocks_odb_write( git_oid *oid, git_odb *db, const void *data, size_t len, git_object_t type)
 {
 	size_t i;
@@ -1657,15 +1657,20 @@ int git_rocks_odb_write( git_oid *oid, git_odb *db, const void *data, size_t len
 	GIT_ASSERT_ARG(oid);
 	GIT_ASSERT_ARG(db);
     // 这里应该是确认数据的准确性。
-	if ((error = git_odb__hash(oid, data, len, type, db->options.oid_type)) < 0){
+    // chenkx 校验 oid 和 内容
+    git_oid gen_oid;
+    puts("before hash check!");
+	if ((error = git_odb__hash(&gen_oid, data, len, type, db->options.oid_type)) < 0 ||
+        git_oid_cmp(&gen_oid, oid) != 0)
+    {
+        puts("hash check! failed!");
         return error;
     }
+    puts("hash check! success!");
+
 	if (git_oid_is_zero(oid))
 		return error_null_oid(GIT_EINVALID, "cannot write object");
 
-	// if (git_odb__freshen(db, oid))
-	// 	return 0;
-    // printf("?????");
 	if ((error = git_mutex_lock(&db->lock)) < 0) {
 		git_error_set(GIT_ERROR_ODB, "failed to acquire the odb lock");
 		return error;
@@ -1673,7 +1678,8 @@ int git_rocks_odb_write( git_oid *oid, git_odb *db, const void *data, size_t len
 	for (i = 0, error = GIT_ERROR; i < db->backends.length && error < 0; ++i) {
 		backend_internal *internal = git_vector_get(&db->backends, i);
 		git_odb_backend *b = internal->backend;
-        // 假设rocks db的backends版本是2
+        // 假设rocks db的backends版本是1
+        // 其他的是2，即最新GIT_ODB_BACKEND_VERSION
         if(b->version == GIT_ODB_BACKEND_VERSION){
             continue;
         }
@@ -1681,11 +1687,16 @@ int git_rocks_odb_write( git_oid *oid, git_odb *db, const void *data, size_t len
 		if (internal->is_alternate)
 			continue;
 
-		if (b->write != NULL)
+        int ex = 0;
+        if (b->exists != NULL) {
+            ex = b->exists(b, oid);
+            if(ex) error = GIT_OK;
+            // printf("object is exist in rocks ? %d\n", ex);
+        }
+		if (!ex && b->write != NULL)
 			error = b->write(b, oid, data, len, type);
 	}
 	git_mutex_unlock(&db->lock);
-
 	if (!error || error == GIT_PASSTHROUGH)
 		return 0;
 

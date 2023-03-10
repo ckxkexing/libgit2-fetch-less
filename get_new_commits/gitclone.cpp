@@ -14,10 +14,11 @@ git_repository *repo = NULL;
 int main(){
 	git_libgit2_init();
 	const char *url = "https://github.com/lu-zero/cargo-c.git";
-    const char *path = "../tmp_cur";
+    const char *path = "../tmp_310";
 	git_clone_options clone_opts = GIT_CLONE_OPTIONS_INIT;
-	// clone_opts.fetch_opts.proxy_opts.type = GIT_PROXY_SPECIFIED;
-    // clone_opts.fetch_opts.proxy_opts.url = "http://172.31.16.1:7890";
+
+    // redirect refs db:
+
 	int error = git_clone(&repo, url, path, NULL);
 
 	if (error < 0) {

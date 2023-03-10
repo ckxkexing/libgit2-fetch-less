@@ -23,10 +23,10 @@ struct exhaustive_state {
 static int exhaustive_objs(const git_oid *id, void *payload)
 {
     char shortsha[41] = {0};
-    git_oid_tostr(shortsha, 40, id);
+    git_oid_tostr(shortsha, 41, id);
 	struct exhaustive_state *mc = (struct exhaustive_state *)payload;
     mc->cnt += 1;
-    printf(">>>>>>>>>>>>>>>>>>>>>>>%d\n", mc->cnt);
+    printf(">>>>>>>>>>>>>>>>>>>>>>>%d\n" , mc->cnt);
 	size_t header_len;
 	git_object_t header_type;
     long size;
@@ -38,6 +38,7 @@ static int exhaustive_objs(const git_oid *id, void *payload)
 	if (header_type == GIT_OBJECT_COMMIT) {
         if(git_odb_read(&obj, mc->db, id) < 0)
             goto end;
+        mc->commit_cnt += 1;
         data = (const unsigned char *)git_odb_object_data(obj);
         size = (long)git_odb_object_size(obj);
         error = git_rocks_odb_write(id, mc->db, data, size, GIT_OBJECT_COMMIT);
@@ -47,11 +48,14 @@ static int exhaustive_objs(const git_oid *id, void *payload)
         git_odb_read(&obj, mc->db, id);
         data = (const unsigned char *)git_odb_object_data(obj);
         size = (long)git_odb_object_size(obj);
+        printf("len = %d\n", size);
+        p_write(fileno(stdout), data, (size_t)size);
         error = git_rocks_odb_write(id, mc->db, data, size, GIT_OBJECT_TREE);
         git_object_free(obj);
     }
     else if(header_type == GIT_OBJECT_BLOB){
         git_blob *blob = NULL;
+        mc->blob_cnt += 1;
         if(git_blob_lookup(&blob, _repo, id) < 0){
             goto end;
         }
@@ -73,7 +77,7 @@ end:
     if(error < 0) {
         printf("error = %d, type = %d\n", error, header_type);
         char shortsha[41] = {0};
-        git_oid_tostr(shortsha, 40, id);
+        git_oid_tostr(shortsha, 41, id);
         printf("error id %s\n", shortsha);
         printf("error raw =\n");
         p_write(fileno(stdout), data, (size_t)size);
@@ -91,9 +95,9 @@ int main(){
 
 	int nobj = 0;
     int error = 0;
-    // const char *path = "../tmp_2023";
+    const char *path = "../tmp_2023";
     // const char *path = "../diffusers";
-    const char *path = "../cargo-c-rev";
+    // const char *path = "../cargo-c-rev";
 
 	error = git_repository_open(&_repo, path);
     if(error) {
@@ -118,9 +122,10 @@ int main(){
     };
 
     git_repository_odb(&mc.db, _repo);
-    printf("object cnt = %d\n", mc.cnt);
     git_odb_foreach(mc.db, &exhaustive_objs, &mc);
-    printf("object cnt = %d\n", mc.cnt);
+    printf("obj cnt = %d\n", mc.cnt);
+    printf("cmt cnt = %d\n", mc.commit_cnt);
+    printf("blob cnt = %d\n", mc.blob_cnt);
     git_libgit2_shutdown();
     return 0;
 }

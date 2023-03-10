@@ -26,7 +26,12 @@
  * Boston, MA 02110-1301, USA.
  */
 #include <string>
+#include <cstring>
+#include <cstdio>
+#include <iostream>
 #include <rocksdb/db.h>
+#include <rocksdb/c.h>
+#include <rocksdb/slice.h>
 extern "C"
 {
 	#include <git2.h>
@@ -78,9 +83,10 @@ int rocks_backend__read_header(size_t *len_p, git_otype *type_p, git_odb_backend
 }
 
 int rocks_backend__read(void **data_p, size_t *len_p, git_otype *type_p, git_odb_backend *_backend, const git_oid *oid) {
-
+    char shortsha[41] = {0};
+    git_oid_tostr(shortsha, 41, oid);
+    printf("read from rocksdb %s\n", shortsha);
 	assert(data_p && len_p && type_p && _backend && oid);
-
 	rocks_backend *backend = (rocks_backend*)(_backend);
 
 	std::string type_key, key_value;
@@ -88,34 +94,47 @@ int rocks_backend__read(void **data_p, size_t *len_p, git_otype *type_p, git_odb
 	auto s = backend->db->Get(rocksdb::ReadOptions(), type_key, &key_value);
 	if(!s.ok())
 		return GIT_ENOTFOUND;
-
+    printf("type is get fine\n");
 	std::string data_key, data_value;
 	rocks_backend__build_key(data_key, oid->id, data_suffix);
 	s = backend->db->Get(rocksdb::ReadOptions(), data_key, &data_value);
 	if(!s.ok())
 		return GIT_ENOTFOUND;
+    printf("data is get fine\n");
+    std::string size_key, size_value;
+    rocks_backend__build_key(size_key, oid->id, size_suffix);
+    s = backend->db->Get(rocksdb::ReadOptions(), size_key, &size_value);
+    if(!s.ok())
+        return GIT_ENOTFOUND;
+    printf("size is get fine\n");
+    printf("load size = %lld\n", std::stoll(size_value));
+    printf("data_value size = %d\n", data_value.size());
 
-	char *dataP = (char*)operator new(data_value.size() + 1);
-	data_value.copy(dataP, data_value.size());
-	dataP[data_value.size()] = '\0';
-
-	*type_p = static_cast<git_otype>(std::stoi(key_value));
-	*len_p = data_value.size();
-	*data_p = dataP;
-
+    size_t data_size = std::stoll(size_value);
+	// char *dataP = (char*)operator new(data_size + 1);
+	// data_value.copy(dataP, data_size);
+    // printf("chenkx hhhhhhhhhhhhhhhhhhhhh\n");
+	// dataP[data_size + 1] = '\0';
+    *data_p = malloc(data_size);
+    std::memcpy(*data_p, data_value.c_str(), data_size);
+    printf("chenkx wwwwwwwwwwwwwwwwwwwww, key value = %d\n", std::stoi(key_value));
+	// *type_p = static_cast<git_otype>(std::stoi(key_value));
+    *type_p = (git_otype) atoi(key_value.c_str());
+	*len_p = std::stoll(size_value);
+	// *data_p = dataP;
+    puts("is herrrrrrrrrrrrrrrrrrrrr");
 	return GIT_OK;
 }
 
 int rocks_backend__exists(git_odb_backend *_backend, const git_oid *oid) {
+    printf("come rocks to check?\n");
 	assert(_backend && oid);
-
 	std::string key;
 	rocks_backend__build_key(key, oid->id, type_suffix);
-
 	std::string value;
 	rocks_backend *backend = (rocks_backend*)(_backend);
 	rocksdb::Status s = backend->db->Get(rocksdb::ReadOptions(), key, &value);
-
+    printf("and result = %d\n", s.ok());
 	return (s.ok() ? 1 : 0);
 }
 
@@ -123,6 +142,7 @@ static int rocks_backend__foreach(git_odb_backend *_backend, git_odb_foreach_cb 
 {
     // 因为我想从pack中
     // 将数据全部读取到rocksdb中
+    // 而不从rocks中读取数据
     // 所以这里的foreach
     // 可以先假装为空。
     int error;
@@ -132,7 +152,6 @@ static int rocks_backend__foreach(git_odb_backend *_backend, git_odb_foreach_cb 
 }
 
 int rocks_backend__write(git_odb_backend *_backend, const git_oid *oid, const void *data, size_t len, git_otype type) {
-
 	assert(oid && _backend && data);
 
 	rocks_backend *backend = (rocks_backend*)(_backend);
@@ -151,11 +170,10 @@ int rocks_backend__write(git_odb_backend *_backend, const git_oid *oid, const vo
 	s = backend->db->Put(rocksdb::WriteOptions(), size_key, std::to_string(len));
 	if(!s.ok())
 		return GIT_ERROR;
-
-	s = backend->db->Put(rocksdb::WriteOptions(), data_key, (char*)data);
+    rocksdb::Slice d = rocksdb::Slice((const char*)data, len);
+	s = backend->db->Put(rocksdb::WriteOptions(), data_key, d);
 	if(!s.ok())
 		return GIT_ERROR;
-
 	return GIT_OK;
 }
 
