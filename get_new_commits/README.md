@@ -18,7 +18,7 @@ TODO:
 
 ```cpp
 char shortsha[41] = {0};
-git_oid_tostr(shortsha, 40, id);
+git_oid_tostr(shortsha, 41, id);
 printf("check for  %s\n", shortsha);
 ```
 

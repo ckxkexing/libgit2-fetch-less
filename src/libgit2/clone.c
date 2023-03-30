@@ -4,7 +4,7 @@
  * This file is part of libgit2, distributed under the GNU GPL v2 with
  * a Linking Exception. For full terms see the included COPYING file.
  */
-
+#include "stdio.h"
 #include "clone.h"
 
 #include "git2/clone.h"
@@ -403,10 +403,10 @@ static int clone_into(git_repository *repo, git_remote *_remote, const git_fetch
 	GIT_ASSERT_ARG(repo);
 	GIT_ASSERT_ARG(_remote);
 
-	if (!git_repository_is_empty(repo)) {
-		git_error_set(GIT_ERROR_INVALID, "the repository is not empty");
-		return -1;
-	}
+	// if (!git_repository_is_empty(repo)) {
+	// 	git_error_set(GIT_ERROR_INVALID, "the repository is not empty");
+	// 	return -1;
+	// }
 
 	if ((error = git_remote_dup(&remote, _remote)) < 0)
 		return error;
@@ -418,8 +418,12 @@ static int clone_into(git_repository *repo, git_remote *_remote, const git_fetch
 
 	if ((error = git_remote_fetch(remote, NULL, &fetch_opts, git_str_cstr(&reflog_message))) != 0)
 		goto cleanup;
-
-	error = checkout_branch(repo, remote, co_opts, branch, git_str_cstr(&reflog_message));
+    // puts("TangPuSen");
+	// chenkx: 应该是在checkout时候解包,调用的loose-db吧
+    // chenkx: 然后好像没有写入到自定的rocksdb中
+	// chenkx: 新数据手动写到rocksdb中
+    // for(int i=0; i<100; i++) puts("");
+	// error = checkout_branch(repo, remote, co_opts, branch, git_str_cstr(&reflog_message));
 
 cleanup:
 	git_remote_free(remote);
@@ -478,25 +482,37 @@ static int git__clone(
 	GIT_ERROR_CHECK_VERSION(&options, GIT_CLONE_OPTIONS_VERSION, "git_clone_options");
 
 	/* Only clone to a new directory or an empty directory */
-	if (git_fs_path_exists(local_path) && !use_existing && !git_fs_path_is_empty_dir(local_path)) {
-		git_error_set(GIT_ERROR_INVALID,
-			"'%s' exists and is not an empty directory", local_path);
-		return GIT_EEXISTS;
-	}
+	// if (git_fs_path_exists(local_path) && !use_existing && !git_fs_path_is_empty_dir(local_path)) {
+	// 	git_error_set(GIT_ERROR_INVALID,
+	// 		"'%s' exists and is not an empty directory", local_path);
+	// 	return GIT_EEXISTS;
+	// }
 
 	/* Only remove the root directory on failure if we create it */
-	if (git_fs_path_exists(local_path))
-		rmdir_flags |= GIT_RMDIR_SKIP_ROOT;
+	// if (git_fs_path_exists(local_path))
+	// 	rmdir_flags |= GIT_RMDIR_SKIP_ROOT;
 
-	if (options.repository_cb)
-		repository_cb = options.repository_cb;
-	else
-		repository_cb = default_repository_create;
 
-	if ((error = repository_cb(&repo, local_path, options.bare, options.repository_cb_payload)) < 0)
-		return error;
+    // chenkx: 这里需要改成
+    // chenkx: repo如果是空的话，就新建，重新clone
+    // chenkx: repo存在，应该要判断下remote url
+    printf("%d?\n", git_fs_path_exists(local_path));
+	if (git_fs_path_exists(local_path) && !git_fs_path_is_empty_dir(local_path) &&
+            (git_repository_open(&repo, local_path) == 0)) {
+        error = git_remote_lookup(&origin, repo, "origin");
+	}
+    else {
+        if (options.repository_cb)
+            repository_cb = options.repository_cb;
+        else
+            repository_cb = default_repository_create;
 
-	if (!(error = create_and_configure_origin(&origin, repo, url, &options))) {
+        if ((error = repository_cb(&repo, local_path, options.bare, options.repository_cb_payload)) < 0)
+            return error;
+        error = create_and_configure_origin(&origin, repo, url, &options);
+    }
+    puts("!!!!");
+	if (!error) {
 		int clone_local = git_clone__should_clone_local(url, options.local);
 		int link = options.local != GIT_CLONE_LOCAL_NO_LINKS;
 
