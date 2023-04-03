@@ -11,10 +11,16 @@ using namespace std;
 
 git_repository *repo = NULL;
 
-int main(){
+int main(int argc, char **argv){
 	git_libgit2_init();
-	const char *url = "https://github.com/lu-zero/cargo-c.git";
-    const char *path = "../tmp_310";
+	// const char *url = "https://github.com/lu-zero/cargo-c.git";
+    // const char *path = "../tmp_310";
+    if (argc != 3) {
+        puts("input error");
+        return 0;
+    }
+    const char *path = argv[1];
+    const char *url = argv[2];
 	git_clone_options clone_opts = GIT_CLONE_OPTIONS_INIT;
 
     // redirect refs db:

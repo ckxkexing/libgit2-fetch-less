@@ -90,16 +90,20 @@ end:
 }
 
 
-int main(){
+int main(int argc, char **argv){
     git_libgit2_init();
-
 	int nobj = 0;
     int error = 0;
-    const char *path = "../tmp_2023";
+    // const char *path = "../tmp_2023";
+    // const char *path = "../rust";
     // const char *path = "../diffusers";
     // const char *path = "../cargo-c-rev";
-
-	error = git_repository_open(&_repo, path);
+    if( argc != 2 ) {
+        puts("input error");
+        return 0;
+    }
+    const char *path = argv[1];
+    error = git_repository_open(&_repo, path);
     if(error) {
         puts("repo error");
         return 0;
