@@ -6,3 +6,7 @@
 CMakeSettings.json
 .vs
 .idea
+
+**/cmake-build-debug
+get_new_commits/bin
+get_new_commits/tmp_rocks
